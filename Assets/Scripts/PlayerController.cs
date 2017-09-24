@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Networking;
 
 public class PlayerController : NetworkBehaviour {
@@ -7,115 +8,104 @@ public class PlayerController : NetworkBehaviour {
     public GameObject bulletPrefab;
     public Transform bulletSpawn;
 
-    //public float speed = 2.0f;
+    public float speed = 2.0f;
     public float bulletSpeed = 3.0f;
-
-    public float speed = 6.0F;
-    public float jumpSpeed = 8.0F;
-    public float gravity = 20.0F;
+    public float shootDistance = 10f;
+    public float shootRate = .5f;
     #endregion
 
     #region PRIVATE_VARIABLE
-    private CharacterController controller;
-
-    private Vector3 dir;
-    private Vector3 baseDir;
-
-    private Vector3 moveDirection = Vector3.zero;
-
-    private float moveTime = 0;
+    private NavMeshAgent navMeshAgent;
+    private Transform targetedEnemy;
+    private Ray shootRay;
+    private RaycastHit shootHit;
+    private bool walking;
+    private bool enemyClicked;
+    private float nextFire;
     #endregion
 
-    void Start() {
-        baseDir = transform.position;
-        dir = baseDir;
+    void Awake() {
+        navMeshAgent = GetComponent<NavMeshAgent>();
     }
 
     void Update() {
-        // Si c'est n'est pas le personnage du joueur, on ne peut pas le controller
+        // Si c'est n'est pas le personnage du joueur, on ne peut pas le controler
         if (!isLocalPlayer)
             return;
-
-        /*
-        if (Input.GetMouseButtonDown(0)) {
-            RaycastHit hit;
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-            if (Physics.Raycast(ray, out hit)) {
-                moveTime = 0;
-                dir = hit.point;
-                baseDir = transform.position;
-            }
-        }
-
-        moveTime += speed * Time.deltaTime;
-
-        transform.position = new Vector3(Mathf.Lerp(baseDir.x, dir.x, moveTime), 0, Mathf.Lerp(baseDir.z, dir.z, moveTime));
-        */
 
         MoveToMouse();
         HandleSpells();
     }
 
-    void FixedUpdate() {
-        RotateToMouse();
-    }
-
     void HandleSpells() {
-        // /!\ Changer le KeyCode par une touche administrable par Unity
-        if (Input.GetKeyDown(KeyCode.A))
-            CmdFire();
     }
 
     // Déplace le joueur à la position de la souris lors d'un clique droit
     void MoveToMouse() {
-        CharacterController controller = GetComponent<CharacterController>();
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
 
-        if (controller.isGrounded) {
-            if (Input.GetMouseButtonDown(0)) {
-                RaycastHit hit;
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-                if (Physics.Raycast(ray, out hit)) {
-                    moveTime = 0;
-                    dir = hit.point;
-                    baseDir = transform.position;
+        if (Input.GetButtonDown("Fire2")) {
+            if (Physics.Raycast(ray, out hit, 100)) {
+                if (hit.collider.CompareTag("Enemy")) {
+                    targetedEnemy = hit.transform;
+                    enemyClicked = true;
+                } else {
+                    walking = true;
+                    enemyClicked = false;
+                    navMeshAgent.destination = hit.point;
+                    navMeshAgent.isStopped = false;
                 }
             }
-
-            moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-            moveDirection = transform.TransformDirection(moveDirection);
-            moveDirection *= speed;
-
-            if (Input.GetButton("Jump"))
-                moveDirection.y = jumpSpeed;
-
         }
-        moveDirection.y -= gravity * Time.deltaTime;
-        controller.Move(moveDirection * Time.deltaTime);
+
+        if (enemyClicked) {
+            MoveAndShoot();
+        }
+
+        if (navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance) {
+            if (!navMeshAgent.hasPath || Mathf.Abs(navMeshAgent.velocity.sqrMagnitude) < float.Epsilon)
+                walking = false;
+        } else {
+            walking = true;
+        }
     }
 
-    void RotateToMouse() {
-        Plane playerPlane = new Plane(Vector3.up, transform.position);
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+    private void MoveAndShoot() {
+        if (targetedEnemy == null)
+            return;
 
-        float hitdist = 0.0f;
+        navMeshAgent.destination = targetedEnemy.position;
 
-        if (playerPlane.Raycast(ray, out hitdist)) {
-            Vector3 targetPoint = ray.GetPoint(hitdist);
-            Quaternion targetRotation = Quaternion.LookRotation(targetPoint - transform.position);
-            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, speed * Time.deltaTime);
+        if (navMeshAgent.remainingDistance >= shootDistance) {
+
+            navMeshAgent.isStopped = false;
+            walking = true;
+        }
+
+        if (navMeshAgent.remainingDistance <= shootDistance) {
+            transform.LookAt(targetedEnemy);
+            Vector3 dirToShoot = targetedEnemy.transform.position - transform.position;
+
+            if (Time.time > nextFire) {
+                nextFire = Time.time + shootRate;
+
+                CmdFire();
+            }
+
+            navMeshAgent.isStopped = true;
+            walking = false;
         }
     }
 
     [Command]
     void CmdFire() {
-        var bullet = (GameObject) Instantiate(
+        var bullet = Instantiate(
             bulletPrefab,
             bulletSpawn.position,
             bulletSpawn.rotation);
 
-        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * 6;
+        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * bulletSpeed;
 
         NetworkServer.Spawn(bullet);
 
