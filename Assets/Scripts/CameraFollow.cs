@@ -2,6 +2,7 @@
 
 public class CameraFollow : MonoBehaviour {
 
+    public PlayerController playerController;
     public Transform playerTransform;
     public int depth = -10;
 
@@ -17,7 +18,8 @@ public class CameraFollow : MonoBehaviour {
         }
     }
 
-    public void SetTarget(Transform target) {
-        playerTransform = target;
+    public void SetTarget(GameObject theGameObject) {
+        playerController = theGameObject.GetComponent<PlayerController>();
+        playerTransform = theGameObject.transform;
     }
 }

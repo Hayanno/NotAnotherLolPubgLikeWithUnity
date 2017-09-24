@@ -24,24 +24,21 @@ public class PlayerController : NetworkBehaviour {
     private float nextFire;
     #endregion
 
-    void Awake() {
+    #region PRIVATE_METHOD
+    private void Awake() {
         navMeshAgent = GetComponent<NavMeshAgent>();
     }
 
-    void Update() {
+    private void Update() {
         // Si c'est n'est pas le personnage du joueur, on ne peut pas le controler
         if (!isLocalPlayer)
             return;
 
         MoveToMouse();
-        HandleSpells();
-    }
-
-    void HandleSpells() {
     }
 
     // Déplace le joueur à la position de la souris lors d'un clique droit
-    void MoveToMouse() {
+    private void MoveToMouse() {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
@@ -85,7 +82,7 @@ public class PlayerController : NetworkBehaviour {
 
         if (navMeshAgent.remainingDistance <= shootDistance) {
             transform.LookAt(targetedEnemy);
-            Vector3 dirToShoot = targetedEnemy.transform.position - transform.position;
+            //Vector3 dirToShoot = targetedEnemy.transform.position - transform.position;
 
             if (Time.time > nextFire) {
                 nextFire = Time.time + shootRate;
@@ -99,7 +96,7 @@ public class PlayerController : NetworkBehaviour {
     }
 
     [Command]
-    void CmdFire() {
+    private void CmdFire() {
         var bullet = Instantiate(
             bulletPrefab,
             bulletSpawn.position,
@@ -111,10 +108,17 @@ public class PlayerController : NetworkBehaviour {
 
         Destroy(bullet, bulletSpeed);
     }
+    #endregion
+
+    #region PUBLIC_METHOD
+    public void SetSpeed(float speed) {
+        GetComponent<NavMeshAgent>().speed = speed;
+    }
 
     public override void OnStartLocalPlayer() {
         GetComponent<MeshRenderer>().material.color = Color.blue;
 
-        Camera.main.GetComponent<CameraFollow>().SetTarget(gameObject.transform);
+        Camera.main.GetComponent<CameraFollow>().SetTarget(gameObject);
     }
+    #endregion
 }

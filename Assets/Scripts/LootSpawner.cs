@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
 
-public class EnemySpawner : NetworkBehaviour {
+public class LootSpawner : NetworkBehaviour {
 
-    public GameObject enemyPrefab;
-    public int numberOfEnemies;
+    public GameObject lootPrefab;
+    public int numberOfLoot;
 
     public override void OnStartServer() {
-        for (int i = 0; i < numberOfEnemies; i++) {
+        for (int i = 0; i < numberOfLoot; i++) {
             var spawnPosition = new Vector3(
                 Random.Range(-8.0f, 8.0f),
                 0.0f,
@@ -18,7 +18,7 @@ public class EnemySpawner : NetworkBehaviour {
                 Random.Range(0, 180),
                 0.0f);
 
-            var enemy = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
+            var enemy = Instantiate(lootPrefab, spawnPosition, spawnRotation);
             NetworkServer.Spawn(enemy);
         }
     }

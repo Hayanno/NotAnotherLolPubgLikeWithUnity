@@ -10,6 +10,8 @@ public class Loot : MonoBehaviour {
     private Renderer rendererComp;
     private Transform playerTransform;
 
+    protected PlayerController playerController;
+
     private bool isInit = false;
 
     private void Awake() {
@@ -21,9 +23,14 @@ public class Loot : MonoBehaviour {
             isInit = true;
             playerTransform = Camera.main.GetComponent<CameraFollow>().playerTransform;
         }
-        
+
+        if (playerController == null && Camera.main.GetComponent<CameraFollow>().playerController != null) {
+            isInit = true;
+            playerController = Camera.main.GetComponent<CameraFollow>().playerController;
+        }
+
         if (Input.GetButtonDown("Fire2"))
-            GetLooted();
+            TryToTake();
     }
 
     private void OnMouseEnter() {
@@ -35,7 +42,7 @@ public class Loot : MonoBehaviour {
         rendererComp.material.color = startcolor;
     }
 
-    private void GetLooted() {
+    private void TryToTake() {
         if (isInit) {
             Ray clickPoint = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hitPoint;
@@ -44,12 +51,14 @@ public class Loot : MonoBehaviour {
                 if (hitPoint.collider == GetComponent<Collider>()) {
                     float dist = Vector3.Distance(playerTransform.position, transform.position);
 
-                    if (dist < lootRange)
+                    if (dist < lootRange) {
+                        GetLooted();
                         Destroy(gameObject);
-
-                    Debug.Log(dist);
+                    }
                 }
             }
         }
     }
+
+    public virtual void GetLooted() {}
 }
