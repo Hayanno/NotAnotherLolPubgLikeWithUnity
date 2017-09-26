@@ -5,7 +5,7 @@ using UnityEngine;
 public class Tier : MonoBehaviour {
 
     public enum Tiers {
-        Commun,
+        Common,
         Rare,
         Epic,
         Legendary

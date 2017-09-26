@@ -4,6 +4,11 @@ using UnityEngine.Networking;
 
 public class PlayerController : NetworkBehaviour {
 
+    // A refaire avec une meilleure connaissances des structure du C#
+    #region PLAYER_STRUCT
+    public bool isBootsEquiped;
+    #endregion
+
     #region PUBLIC_VARIABLE
     public GameObject bulletPrefab;
     public Transform bulletSpawn;
@@ -113,6 +118,10 @@ public class PlayerController : NetworkBehaviour {
     #region PUBLIC_METHOD
     public void SetSpeed(float speed) {
         GetComponent<NavMeshAgent>().speed = speed;
+    }
+
+    public void IsBootEquiped(bool isEquiped) {
+        isBootsEquiped = isEquiped;
     }
 
     public override void OnStartLocalPlayer() {
